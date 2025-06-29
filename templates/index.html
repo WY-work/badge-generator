@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>徽章效果图生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F9EFD',      // 清新蓝色
+                        secondary: '#7BC5FF',    // 浅蓝色
+                        accent: '#FF85A1',       // 柔和粉色
+                        neutral: '#2A3B4C',      // 深灰色文本
+                        'neutral-light': '#F8FAFC', // 超浅灰色背景
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .shadow-custom {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .transition-custom {
+                transition: all 0.3s ease;
+            }
+            .badge-preview {
+                transform: perspective(1000px) rotateX(10deg) rotateY(5deg);
+                transition: transform 0.5s ease;
+            }
+            .badge-preview:hover {
+                transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
+            }
+            .gradient-text {
+                background-clip: text;
+                -webkit-background-clip: text;
+                color: transparent;
+                background-image: linear-gradient(to right, #4F9EFD, #FF85A1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-pink-50 font-sans text-neutral min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-certificate text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-neutral">徽章效果图生成器</h1>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- 标题区域 -->
+            <div class="text-center mb-10">
+                <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold gradient-text">
+                    快速生成徽章效果图
+                </h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">上传您的设计图片，选择徽章类型和尺寸，我们将自动为您生成徽章效果图。</p>
+            </div>
+
+            <!-- 操作区域 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+                <!-- 左侧上传和设置区域 -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- 上传区域 -->
+                    <div class="bg-white rounded-2xl shadow-custom p-6 transition-custom hover:shadow-lg">
+                        <h3 class="text-lg font-semibold text-neutral mb-4 flex items-center">
+                            <i class="fa fa-upload text-primary mr-2"></i>上传设计图片
+                        </h3>
+                        <div id="drop-area" class="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-custom">
+                            <i class="fa fa-image text-4xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500 mb-2">拖拽图片到此处，或</p>
+                            <button id="select-image-btn" class="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white px-5 py-2.5 rounded-lg transition-custom shadow-md hover:shadow-lg">
+                                选择图片
+                            </button>
+                            <input type="file" id="file-input" accept="image/*" class="hidden">
+                            <p class="text-gray-400 text-sm mt-2">支持 JPG, PNG, WebP 格式</p>
+                        </div>
+                        <div id="preview-container" class="mt-4 hidden">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">图片预览</h4>
+                            <div class="relative rounded-xl overflow-hidden border border-gray-100 bg-white shadow-sm">
+                                <img id="image-preview" src="" alt="上传的图片预览" class="w-full h-auto max-h-40 object-contain">
+                                <button id="remove-image" class="absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-700 rounded-full w-8 h-8 flex items-center justify-center transition-custom shadow-sm backdrop-blur-sm">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 徽章设置区域 -->
+                    <div class="bg-white rounded-2xl shadow-custom p-6 transition-custom hover:shadow-lg">
+                        <h3 class="text-lg font-semibold text-neutral mb-4 flex items-center">
+                            <i class="fa fa-cog text-primary mr-2"></i>徽章设置
+                        </h3>
+                        
+                        <!-- 徽章类型选择 -->
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-medium mb-2">徽章类型</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="badge-type-option relative">
+                                    <input type="radio" id="badge-type-metal" name="badge-type" value="metal" class="peer sr-only" checked>
+                                    <label for="badge-type-metal" class="flex flex-col items-center p-4 border-2 border-gray-100 rounded-xl cursor-pointer hover:border-primary transition-custom peer-checked:border-primary peer-checked:bg-primary/5">
+                                        <i class="fa fa-cubes text-2xl text-gray-400 mb-2"></i>
+                                        <span class="text-sm font-medium">马口铁徽章</span>
+                                    </label>
+                                </div>
+                                <div class="badge-type-option relative">
+                                    <input type="radio" id="badge-type-acrylic" name="badge-type" value="acrylic" class="peer sr-only">
+                                    <label for="badge-type-acrylic" class="flex flex-col items-center p-4 border-2 border-gray-100 rounded-xl cursor-pointer hover:border-primary transition-custom peer-checked:border-primary peer-checked:bg-primary/5">
+                                        <i class="fa fa-cube text-2xl text-gray-400 mb-2"></i>
+                                        <span class="text-sm font-medium">亚克力徽章</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 马口铁徽章尺寸选项 -->
+                        <div id="metal-sizes" class="mb-6">
+                            <label class="block text-gray-700 font-medium mb-2">选择尺寸</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                {% for size in badge_types.metal.sizes %}
+                                <div class="size-option relative">
+                                    <input type="radio" id="size-{{ size }}mm" name="size" value="{{ size }}" class="peer sr-only" {% if loop.first %}checked{% endif %}>
+                                    <label for="size-{{ size }}mm" class="flex flex-col items-center justify-center p-3 border-2 border-gray-100 rounded-lg cursor-pointer hover:border-primary transition-custom peer-checked:border-primary peer-checked:bg-primary/5">
+                                        <span class="text-xs">{{ size }}mm</span>
+                                        <div class="w-{{ size//10 }} h-{{ size//10 }} rounded-full border border-gray-200 mt-1"></div>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- 亚克力徽章选项 -->
+                        <div id="acrylic-options" class="mb-6 hidden">
+                            <label class="block text-gray-700 font-medium mb-2">边缘扩展</label>
+                            <div class="flex items-center">
+                                <input type="range" id="expand-border" name="expand" min="1" max="10" value="3" class="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-primary">
+                                <span id="expand-value" class="ml-3 text-sm font-medium text-gray-700">3mm</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">调整边缘扩展大小</p>
+                        </div>
+                        
+                        <!-- 生成按钮 -->
+                        <button id="generate-btn" class="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white py-3.5 rounded-xl transition-custom flex items-center justify-center font-medium shadow-lg hover:shadow-xl">
+                            <i class="fa fa-magic mr-2"></i>
+                            生成效果图
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右侧结果区域 -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl shadow-custom p-6 h-full">
+                        <h3 class="text-lg font-semibold text-neutral mb-4 flex items-center">
+                            <i class="fa fa-eye text-primary mr-2"></i>效果图预览
+                        </h3>
+                        
+                        <!-- 加载状态 -->
+                        <div id="loading-container" class="hidden h-64 flex flex-col items-center justify-center">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                            <p class="text-gray-500 mt-4">正在处理图片，请稍候...</p>
+                        </div>
+                        
+                        <!-- 结果区域 -->
+                        <div id="results-container" class="hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="font-medium text-gray-700" id="result-title">马口铁徽章 - 58mm</h4>
+                                <button id="download-btn" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-secondary to-primary hover:from-secondary/90 hover:to-primary/90 text-white rounded-lg transition-custom text-sm font-medium shadow hover:shadow-md">
+                                    <i class="fa fa-download mr-2"></i>
+                                    下载图片
+                                </button>
+                            </div>
+                            
+                            <div class="flex justify-center mb-6">
+                                <div class="badge-preview bg-white p-4 rounded-xl shadow-lg">
+                                    <img id="badge-result" src="" alt="徽章预览图" class="max-w-full h-auto rounded-full">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h5 class="text-sm font-medium text-gray-700 mb-2">徽章类型</h5>
+                                    <p id="result-type" class="text-neutral">马口铁徽章</p>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h5 class="text-sm font-medium text-gray-700 mb-2">徽章尺寸</h5>
+                                    <p id="result-size" class="text-neutral">58mm</p>
+                                </div>
+                                {% if badge_types.acrylic.expand_options %}
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <h5 class="text-sm font-medium text-gray-700 mb-2">边缘扩展</h5>
+                                    <p id="result-expand" class="text-neutral">3mm</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 初始状态提示 -->
+                        <div id="initial-message" class="h-64 flex flex-col items-center justify-center text-center">
+                            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-pink-50 flex items-center justify-center mb-6 shadow-sm">
+                                <i class="fa fa-info text-2xl text-primary"></i>
+                            </div>
+                            <p class="text-gray-500 max-w-md">上传图片并选择徽章类型和尺寸，然后点击"生成效果图"按钮开始创建您的徽章预览。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-neutral text-white py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2025 徽章效果图生成器 版权所有</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM元素
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const selectImageBtn = document.getElementById('select-image-btn');
+        const imagePreview = document.getElementById('image-preview');
+        const previewContainer = document.getElementById('preview-container');
+        const removeImageBtn = document.getElementById('remove-image');
+        const badgeTypeMetal = document.getElementById('badge-type-metal');
+        const badgeTypeAcrylic = document.getElementById('badge-type-acrylic');
+        const metalSizes = document.getElementById('metal-sizes');
+        const acrylicOptions = document.getElementById('acrylic-options');
+        const expandBorder = document.getElementById('expand-border');
+        const expandValue = document.getElementById('expand-value');
+        const generateBtn = document.getElementById('generate-btn');
+        const initialMessage = document.getElementById('initial-message');
+        const resultsContainer = document.getElementById('results-container');
+        const loadingContainer = document.getElementById('loading-container');
+        const badgeResult = document.getElementById('badge-result');
+        const resultTitle = document.getElementById('result-title');
+        const resultType = document.getElementById('result-type');
+        const resultSize = document.getElementById('result-size');
+        const resultExpand = document.getElementById('result-expand');
+        const downloadBtn = document.getElementById('download-btn');
+        
+        // 事件监听器
+        selectImageBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        removeImageBtn.addEventListener('click', removeImage);
+        badgeTypeMetal.addEventListener('change', toggleBadgeOptions);
+        badgeTypeAcrylic.addEventListener('change', toggleBadgeOptions);
+        expandBorder.addEventListener('input', updateExpandValue);
+        generateBtn.addEventListener('click', generateBadge);
+        downloadBtn.addEventListener('click', downloadBadge);
+        
+        // 拖拽上传功能
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('border-primary', 'bg-primary/5');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('border-primary', 'bg-primary/5');
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                handleFiles(files);
+            }
+        }
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length) {
+                handleFiles(files);
+            }
+        }
+        
+        function handleFiles(files) {
+            const file = files[0];
+            if (file.type.match('image.*')) {
+                displayImagePreview(file);
+            } else {
+                alert('请选择有效的图片文件！');
+            }
+        }
+        
+        // 显示图片预览
+        function displayImagePreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+                initialMessage.classList.add('hidden');
+                resultsContainer.classList.add('hidden');
+            }
+            reader.readAsDataURL(file);
+        }
+        
+        // 移除图片
+        function removeImage() {
+            imagePreview.src = '';
+            previewContainer.classList.add('hidden');
+            initialMessage.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+            fileInput.value = '';
+        }
+        
+        // 切换徽章选项
+        function toggleBadgeOptions() {
+            if (badgeTypeMetal.checked) {
+                metalSizes.classList.remove('hidden');
+                acrylicOptions.classList.add('hidden');
+            } else {
+                metalSizes.classList.add('hidden');
+                acrylicOptions.classList.remove('hidden');
+            }
+        }
+        
+        // 更新边缘扩展值显示
+        function updateExpandValue() {
+            expandValue.textContent = `${expandBorder.value}mm`;
+        }
+        
+        // 生成徽章
+        function generateBadge() {
+            const fileInput = document.getElementById('file-input');
+            if (!fileInput.files.length) {
+                alert('请先上传图片！');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+            
+            const badgeType = document.querySelector('input[name="badge-type"]:checked').value;
+            formData.append('badge_type', badgeType);
+            
+            if (badgeType === 'metal') {
+                const size = document.querySelector('input[name="size"]:checked').value;
+                formData.append('size', size);
+            } else {
+                const expand = document.getElementById('expand-border').value;
+                formData.append('expand', expand);
+                // 对于亚克力徽章，使用默认尺寸
+                formData.append('size', 58);
+            }
+            
+            // 显示加载状态
+            loadingContainer.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+            
+            // 发送请求
+            fetch('/generate', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 更新结果显示
+                    badgeResult.src = data.badge_image;
+                    
+                    // 更新结果信息
+                    const typeText = badgeType === 'metal' ? '马口铁徽章' : '亚克力徽章';
+                    resultTitle.textContent = `${typeText} - ${data.size}mm`;
+                    resultType.textContent = typeText;
+                    resultSize.textContent = `${data.size}mm`;
+                    
+                    if (badgeType === 'acrylic') {
+                        resultExpand.textContent = `${data.expand}mm`;
+                        document.querySelector('#result-expand').parentElement.classList.remove('hidden');
+                    } else {
+                        document.querySelector('#result-expand').parentElement.classList.add('hidden');
+                    }
+                    
+                    // 显示结果
+                    resultsContainer.classList.remove('hidden');
+                    
+                    // 保存结果数据用于下载
+                    downloadBtn.setAttribute('data-image', data.badge_image);
+                    downloadBtn.setAttribute('data-filename', `badge_${badgeType}_${data.size}mm.png`);
+                } else {
+                    alert(`生成徽章失败: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('发生错误，请重试。');
+            })
+            .finally(() => {
+                // 隐藏加载状态
+                loadingContainer.classList.add('hidden');
+            });
+        }
+        
+        // 下载徽章
+        function downloadBadge() {
+            const imageData = downloadBtn.getAttribute('data-image');
+            const filename = downloadBtn.getAttribute('data-filename');
+            
+            if (!imageData) {
+                alert('没有可下载的图片');
+                return;
+            }
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = imageData;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
